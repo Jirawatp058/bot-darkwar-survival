@@ -173,8 +173,10 @@ if __name__ == "__main__":
                 print("add energy")
                 find_and_click("energy20.png")
                 time.sleep(3)
-                # find_and_click("emptyarea.png")
-                time.sleep(3)
+            elif find_and_click("trucknotavailable.png"):
+                print("รถไม่ว่าง")
+                click_safe_ground()
+                time.sleep(60)
             else:
                 print("ลองใหม่ใน 10 วินาที...")
                 click_safe_ground()
