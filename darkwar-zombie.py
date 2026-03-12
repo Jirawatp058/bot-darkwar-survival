@@ -89,7 +89,7 @@ def check_enemy_power():
 
 
 def click_safe_ground():
-    print("กำลังสแกนหาพื้นที่สีเขียวว่างๆ บนจอ...")
+    print("[?] กำลังสแกนหาพื้นที่สีเขียวว่างๆ บนจอ...")
     try:
         # 1. แคปหน้าจอและแปลงรูปแบบภาพสำหรับ OpenCV
         screen = pyautogui.screenshot()
@@ -188,7 +188,7 @@ def find(image_path, confidence=0.8, wait_time=1.25):
 
 # ลำดับการทำงาน (State Machine อย่างง่าย)
 def attack_zombie_routine():
-    print("=== เริ่มลูปค้นหาและโจมตีซอมบี้ ===")
+    print("======================== เริ่มลูปค้นหาและโจมตีซอมบี้ =================================")
     
     # 1. กดปุ่มค้นหา/เรดาร์
     if find_and_click('zoom.png'):
@@ -229,13 +229,17 @@ def attack_zombie_routine():
 
 # รันลูปการทำงาน
 if __name__ == "__main__":
-    print("โปรแกรมจะเริ่มทำงานใน 5 วินาที... (กรุณาเปิดหน้าจอเกมเตรียมไว้)")
+    print("***********************โปรแกรมจะเริ่มทำงานใน 5 วินาที... (กรุณาเปิดหน้าจอเกมเตรียมไว้)*************************")
     time.sleep(5)
+    
+    success_count = 0
     
     while True:
         success = attack_zombie_routine()
         
         if success:
+            success_count += 1
+            print(f">>> ส่งทัพสำเร็จไปแล้ว {success_count} ครั้ง <<<")
             # สมมติว่าใช้เวลาเดินทัพไป-กลับ 3 นาที (180 วินาที)
             print("พักรอทัพกลับมา 3 นาที...")
             time.sleep(190) 
