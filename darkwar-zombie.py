@@ -37,6 +37,57 @@ def check_energy_portable():
         print(f"[!] เกิดข้อผิดพลาดในการเช็คพลังงาน: {e}")
         return False
 
+def check_enemy_power():
+    print("[?] กำลังสแกนหาแถบพลัง VS...")
+    try:
+        vs_loc = pyautogui.locateOnScreen('vs_icon.png', confidence=0.8)
+        
+        if vs_loc:
+            # ตีกรอบจับภาพฝั่งขวาเหมือนเดิม
+            roi_x = int(vs_loc.left + vs_loc.width + 10)
+            roi_y = int(vs_loc.top - 10)
+            roi_w = 200 
+            roi_h = int(vs_loc.height + 20)
+            
+            roi_screenshot = pyautogui.screenshot(region=(roi_x, roi_y, roi_w, roi_h))
+            img_bgr = cv2.cvtColor(np.array(roi_screenshot), cv2.COLOR_RGB2BGR)
+            hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+            
+            # --- เปลี่ยนมาตรวจจับ "สีขาว" แทน ---
+            # สีขาวใน HSV คือ: ค่า H(สี) อะไรก็ได้, ค่า S(ความสด) ต่ำมากๆ, ค่า V(ความสว่าง) สูงมากๆ
+            lower_white = np.array([0, 0, 200]) 
+            upper_white = np.array([180, 45, 255])
+            
+            # สร้าง Mask กรองเอาเฉพาะสีขาว
+            white_mask = cv2.inRange(hsv, lower_white, upper_white)
+            
+            # นับจำนวนพิกเซลสีขาว
+            white_pixels = cv2.countNonZero(white_mask)
+            
+            # --- ระบบ DEBUG (เปิดหน้าต่างโชว์สิ่งที่บอทเห็น) ---
+            # หน้าต่างนี้จะโชว์ภาพขาวดำ ส่วนที่เป็นสีขาวคือสิ่งที่บอทจับได้
+            # cv2.imshow("Bot Vision (White Mask)", white_mask)
+            # cv2.waitKey(2000) # โชว์ค้างไว้ 2 วินาที (2000 ms) แล้วปิดอัตโนมัติ
+            # cv2.destroyAllWindows()
+            # ----------------------------------------------
+            
+            # ถ้าเจอสีขาวเยอะ (ตัวเลขเป็นสีขาว) แปลว่าตีไหว!
+            if white_pixels > 4100: 
+                print(f"[+] เจอตัวเลขสีขาว ({white_pixels} จุด) -> ตีไหว ลุยเลย!")
+                return True
+            else:
+                print(f"[-] ไม่พบตัวเลขสีขาว ({white_pixels} จุด) น่าจะเป็นสีแดง -> ยกเลิกการตี")
+                return False
+                
+        else:
+            print("[-] หารูป VS ไม่เจอ (ตั้งค่า confidence หรือรูปภาพอาจยังไม่เป๊ะ)")
+            return False
+
+    except Exception as e:
+        print(f"[!] เกิดข้อผิดพลาด: {e}")
+        return False
+
+
 def click_safe_ground():
     print("กำลังสแกนหาพื้นที่สีเขียวว่างๆ บนจอ...")
     try:
@@ -88,7 +139,7 @@ def click_safe_ground():
         return False
 
 # ฟังก์ชันหลักสำหรับหาภาพและคลิก
-def find_and_click(image_path, confidence=0.8, wait_time=1.5):
+def find_and_click(image_path, confidence=0.8, wait_time=1.25):
     try:
         # ค้นหาจุดกึ่งกลางของภาพบนหน้าจอ
         location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence)
@@ -113,7 +164,7 @@ def find_and_click(image_path, confidence=0.8, wait_time=1.5):
         print(f"[!] ข้อผิดพลาดอื่นๆ: {e}")
         return False
 # ฟังก์ชันหลักสำหรับหาภาพ
-def find(image_path, confidence=0.8, wait_time=1.5):
+def find(image_path, confidence=0.8, wait_time=1.25):
     try:
         # ค้นหาจุดกึ่งกลางของภาพบนหน้าจอ
         location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence)
@@ -146,21 +197,28 @@ def attack_zombie_routine():
             
         #     # 3. กดยืนยันค้นหา (อาจจะหน่วงเวลาเพิ่มให้แผนที่เลื่อนไปหาเป้าหมาย)
             if find_and_click('find.png', wait_time=2.5):
-                print('พบซอมบี้')
+                print("[+] พบซอมบี้")
                 
                 
         #         # 4. กดโจมตีซอมบี้บนแผนที่
                 if find_and_click('rally.png'):
-        #             # 5. จัดทัพ (ถ้าเกมไม่จัดให้อัตโนมัติ)
-                    if find_and_click('start-rally.png'):
-                        if find_and_click('cancle.png'):
-                            click_safe_ground()
-                            print("ตีซอมบี้ซ้ำคนอื่น")
-                            return False
-                        else:
-                            print(">>> ส่งทัพสำเร็จ! <<<")
-                            return True
-                    
+                    print("[+] กดรวมพล")
+                    if find('good_enermy.png'):
+                        print("[+] ศัตรูพลังน้อยกว่า")
+                         # 5. จัดทัพ (ถ้าเกมไม่จัดให้อัตโนมัติ)
+                        if find_and_click('start-rally.png'):
+                            if find_and_click('cancle.png'):
+                                click_safe_ground()
+                                print("[+] ตีซอมบี้ซ้ำคนอื่น")
+                                return False
+                            else:
+                                print("[+] ส่งทัพสำเร็จ! <<<")
+                                return True
+                    else:
+                        print("[-] ศัตรูพลังเยอะกว่า")
+                        return False
+        #               
+                        
         #             # 6. กดส่งทัพ (March)
         #             if find_and_click('march_btn.png'):
         #                 print(">>> ส่งทัพสำเร็จ! <<<")
@@ -186,20 +244,24 @@ if __name__ == "__main__":
         else:
             # ถ้าเกิด Error หรือหาปุ่มไม่เจอ ให้พักแป๊บเดียวแล้วลองใหม่
             if find_and_click('back.png'): 
-                print("Back")
+                print("[+] ออกจากหน้าต่าง ลองใหม่ใน 2 วินาที...")
                 time.sleep(2)
             elif find_and_click("world.png"):
-                print("world")
+                print("[+] อยู่ในบ้าน ลองใหม่ใน 3 วินาที...")
                 time.sleep(3)
             elif find_and_click("add-energy.png"):
-                print("add energy")
+                print("[+] add energy ลองใหม่ใน 3 วินาที...")
                 find_and_click("energy20.png")
                 time.sleep(3)
             elif find("trucknotavailable.png"):
-                print("รถไม่ว่าง")
                 click_safe_ground()
+                print("[-] รถไม่ว่าง ลองใหม่ใน 60 วินาที...")
                 time.sleep(60)
-            else:
-                print("ลองใหม่ใน 10 วินาที...")
+            elif find("good_enermy.png") == False:
                 click_safe_ground()
-                time.sleep(10)
+                print("[-] ศัตรูพลังเยอะกว่า ลองใหม่ใน 30 วินาที...")
+                time.sleep(30)
+            else:
+                click_safe_ground()
+                print("[-] ลองใหม่ใน 3 วินาที...")
+                time.sleep(3)
