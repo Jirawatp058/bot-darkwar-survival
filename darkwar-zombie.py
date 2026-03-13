@@ -100,17 +100,17 @@ def attack_zombie_routine():
     print("======================== เริ่มลูปค้นหาและโจมตีซอมบี้ =================================")
     
     # 1. กดปุ่มค้นหา/เรดาร์
-    if find_and_click('zoom.png'):
+    if find_and_click('images/zoom.png'):
         
         # 2. เลือกแท็บซอมบี้
-        if find_and_click('join.png') or find_and_click('joininactive.png'):
+        if find_and_click('images/join.png') or find_and_click('images/joininactive.png'):
             
             # 3. กดยืนยันค้นหา 
-            if find_and_click('find.png', wait_time=2.5):
+            if find_and_click('images/find.png', wait_time=2.5):
                 print("[+] พบซอมบี้")
                 
                 # 4. กดโจมตีซอมบี้บนแผนที่
-                if find_and_click('rally.png'):
+                if find_and_click('images/rally.png'):
                     print("[+] กดรวมพล")
                     
                     # 5. เช็คว่าพลังศัตรูตีไหวไหม
@@ -118,10 +118,10 @@ def attack_zombie_routine():
                         print("[+] ศัตรูพลังน้อยกว่า")
                         
                         # 6. กดปุ่มเตรียมส่งทัพ
-                        if find_and_click('start-rally.png'):
+                        if find_and_click('images/start-rally.png'):
                             
                             # เช็คว่ามีคนตีไปแล้วหรือยัง
-                            if find_and_click('cancle.png'):
+                            if find_and_click('images/cancle.png'):
                                 print("[-] ตีซอมบี้ซ้ำคนอื่น ยกเลิก!")
                                 return False
                             else:
@@ -159,21 +159,21 @@ if __name__ == "__main__":
             
         else:
             # วิเคราะห์สาเหตุที่ล้มเหลวและแก้ไขสถานการณ์
-            if find_and_click('back.png'): 
+            if find_and_click('images/back.png'): 
                 print("[+] ออกจากหน้าต่าง ลองใหม่ใน 2 วินาที...")
                 time.sleep(2)
-            elif find_and_click("world.png"):
+            elif find_and_click("images/world.png"):
                 print("[+] อยู่ในบ้าน (กดออกแผนที่โลก) ลองใหม่ใน 3 วินาที...")
                 time.sleep(3)
-            elif find_and_click("add-energy.png"):
-                find_and_click("energy20.png")
+            elif find_and_click("images/add-energy.png"):
+                find_and_click("images/energy20.png")
                 print("[+] พลังงานหมด กำลังเติมพลังงาน...")
                 time.sleep(3)
-            elif find("trucknotavailable.png"):
+            elif find("images/trucknotavailable.png"):
                 click_safe_ground()
                 print("[-] รถไม่ว่าง ลองใหม่ใน 60 วินาที...")
                 time.sleep(60)
-            elif not find("good_enermy.png"): # ปรับ logic เช็ครูปให้เขียนสั้นลง
+            elif not find("images/good_enermy.png"): # ปรับ logic เช็ครูปให้เขียนสั้นลง
                 click_safe_ground()
                 print("[-] ศัตรูพลังเยอะกว่า (หรือหาปุ่มไม่เจอ) ลองใหม่ใน 30 วินาที...")
                 time.sleep(30)
