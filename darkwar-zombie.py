@@ -155,6 +155,7 @@ if __name__ == "__main__":
         if success:
             success_count += 1
             print(f">>> ส่งทัพสำเร็จไปแล้ว {success_count} ครั้ง <<<")
+            print(f">>> พลังงานหมด กำลังเติมพลังงาน... (เติมไปแล้ว {energy_refill_count} ครั้ง) <<<")
             print("พักรอทัพกลับมา 3 นาที (180 วินาที)...")
             time.sleep(180) 
             
@@ -169,7 +170,6 @@ if __name__ == "__main__":
             elif find_and_click("images/add-energy.png"):
                 find_and_click("images/energy20.png")
                 energy_refill_count += 1
-                print(f"[+] พลังงานหมด กำลังเติมพลังงาน... (เติมไปแล้ว {energy_refill_count} ครั้ง)")
                 time.sleep(3)
             elif find("images/trucknotavailable.png"):
                 click_safe_ground()
