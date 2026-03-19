@@ -146,10 +146,13 @@ if __name__ == "__main__":
     # บังคับล็อคหน้าต่างก่อนเริ่มบอทเสมอ
     setup_game_window(GAME_NAME)
     
+    is_attack = True
     success_count = 0
     energy_refill_count = 0
     
-    while True:
+    while is_attack:
+        if find("images/frank.png"):
+            is_attack = False
         success = attack_zombie_routine()
         
         if success:
