@@ -147,6 +147,7 @@ if __name__ == "__main__":
     setup_game_window(GAME_NAME)
     
     success_count = 0
+    energy_refill_count = 0
     
     while True:
         success = attack_zombie_routine()
@@ -167,7 +168,8 @@ if __name__ == "__main__":
                 time.sleep(3)
             elif find_and_click("images/add-energy.png"):
                 find_and_click("images/energy20.png")
-                print("[+] พลังงานหมด กำลังเติมพลังงาน...")
+                energy_refill_count += 1
+                print(f"[+] พลังงานหมด กำลังเติมพลังงาน... (เติมไปแล้ว {energy_refill_count} ครั้ง)")
                 time.sleep(3)
             elif find("images/trucknotavailable.png"):
                 click_safe_ground()
