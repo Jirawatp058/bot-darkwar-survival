@@ -33,37 +33,37 @@ def setup_game_window(window_title):
 # 2. ฟังก์ชันช่วยเหลือ (หาพื้นที่, หาปุ่ม, คลิก)
 # ==========================================
 def click_safe_ground():
-    print("[?] กำลังสแกนหาพื้นที่สีเขียวว่างๆ บนจอ...")
+    print("[?] กำลังสแกนหาพื้นที่สีน้ำตาลว่างๆ (หลบหลีกสิ่งปลูกสร้าง)...")
     try:
         screen = pyautogui.screenshot()
         screen_np = np.array(screen)
         frame_bgr = cv2.cvtColor(screen_np, cv2.COLOR_RGB2BGR)
         hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
 
-        lower_green = np.array([35, 40, 40])
-        upper_green = np.array([85, 255, 255])
-        mask = cv2.inRange(hsv, lower_green, upper_green)
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # ช่วงสีของพื้นทราย/สีน้ำตาล (Hue: 5-30)
+        lower_brown = np.array([5, 40, 80])
+        upper_brown = np.array([30, 220, 255])
+        mask = cv2.inRange(hsv, lower_brown, upper_brown)
 
-        if contours:
-            largest_contour = max(contours, key=cv2.contourArea)
-            if cv2.contourArea(largest_contour) > 5000:
-                M = cv2.moments(largest_contour)
-                if M["m00"] != 0:
-                    center_x = int(M["m10"] / M["m00"])
-                    center_y = int(M["m01"] / M["m00"])
-                    pyautogui.click(center_x, center_y)
-                    print(f"[+] เจอพื้นที่สีเขียวขนาดใหญ่ คลิกเคลียร์จอที่ (X:{center_x}, Y:{center_y})")
-                    time.sleep(1)
-                    return True
-            else:
-                print("[-] เจอสีเขียว แต่พื้นที่เล็กเกินไป เสี่ยงโดนของอื่น")
-                return False
+        # ใช้ distanceTransform เพื่อหาจุดลึกที่สุดในพื้นที่ว่าง
+        # (คือจุดที่ห่างจากเส้นขอบของสิ่งปลูกสร้าง/เงาดำ/UI หน้าจอ มากที่สุด)
+        dist_transform = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(dist_transform)
+
+        # max_val คือระยะรัศมี(พิกเซล) จากจุดศูนย์กลางถึงขอบสิ่งกีดขวางที่ใกล้ที่สุด
+        # กำหนดรัศมีขั้นต่ำ 20 พิกเซล (พื้นที่ว่างต้องกว้างอย่างน้อย ~40x40 พิกเซล)
+        if max_val >= 20:
+            center_x, center_y = max_loc
+            pyautogui.click(center_x, center_y)
+            print(f"[+] เจอพื้นที่ปลอดภัยกว้างพอ (รัศมี {int(max_val)} px) คลิกหลบสิ่งเจือปนที่ (X:{center_x}, Y:{center_y})")
+            time.sleep(1)
+            return True
         else:
-            print("[-] ไม่พบสีเขียวบนหน้าจอเลย")
+            print(f"[-] พื้นที่ว่างแคบเกินไป เสี่ยงคลิกโดนบ้านอื่น (หาระยะได้แค่ {int(max_val)} px)")
             return False
+            
     except Exception as e:
-        print(f"[!] เกิดข้อผิดพลาด: {e}")
+        print(f"[!] เกิดข้อผิดพลาดใน click_safe_ground: {e}")
         return False
 
 def find_and_click(image_path, confidence=0.8, wait_time=2):
@@ -125,7 +125,8 @@ def attack_zombie_routine():
                                 print("[-] ตีซอมบี้ซ้ำคนอื่น ยกเลิก!")
                                 return False
                             else:
-                                print(">>> ส่งทัพสำเร็จ! <<<")
+                                current_time = time.strftime("%H:%M:%S", time.localtime())
+                                print(f">>> ส่งทัพสำเร็จ! เวลา: {current_time} <<<")
                                 return True
                     else:
                         print("[-] ศัตรูพลังเยอะกว่า (หรือหา good_enermy ไม่เจอ)")
@@ -138,51 +139,54 @@ def attack_zombie_routine():
 # 4. ลูปควบคุมบอท
 # ==========================================
 if __name__ == "__main__":
-    GAME_NAME = "DarkWar" # ชื่อหน้าต่างเกม
-    
-    print("*********************** โปรแกรมจะเริ่มทำงานใน 5 วินาที... *************************")
-    time.sleep(5)
-    
-    # บังคับล็อคหน้าต่างก่อนเริ่มบอทเสมอ
-    setup_game_window(GAME_NAME)
-    
-    is_attack = True
-    success_count = 0
-    energy_refill_count = 0
-    
-    while is_attack:
-        if find("images/frank.png"):
-            is_attack = False
-        success = attack_zombie_routine()
+    def main():
+        GAME_NAME = "DarkWar" # ชื่อหน้าต่างเกม
         
-        if success:
-            success_count += 1
-            print(f">>> ส่งทัพสำเร็จไปแล้ว {success_count} ครั้ง <<<")
-            print(f">>> เติมพลังงานไปแล้ว {energy_refill_count} ครั้ง <<<")
-            print("พักรอทัพกลับมา 3 นาที (180 วินาที)...")
-            time.sleep(180) 
+        print("*********************** โปรแกรมจะเริ่มทำงานใน 5 วินาที... *************************")
+        time.sleep(5)
+        
+        # บังคับล็อคหน้าต่างก่อนเริ่มบอทเสมอ
+        setup_game_window(GAME_NAME)
+        
+        is_attack: bool = True
+        success_count: int = 0
+        energy_refill_count: int = 0
+        
+        while is_attack:
+            if find("images/frank.png"):
+                is_attack = False
+            success = attack_zombie_routine()
             
-        else:
-            # วิเคราะห์สาเหตุที่ล้มเหลวและแก้ไขสถานการณ์
-            if find_and_click('images/back.png'): 
-                print("[+] ออกจากหน้าต่าง ลองใหม่ใน 2 วินาที...")
-                time.sleep(2)
-            elif find_and_click("images/world.png"):
-                print("[+] อยู่ในบ้าน (กดออกแผนที่โลก) ลองใหม่ใน 3 วินาที...")
-                time.sleep(3)
-            elif find_and_click("images/add-energy.png"):
-                find_and_click("images/energy20.png")
-                energy_refill_count += 1
-                time.sleep(3)
-            elif find("images/trucknotavailable.png"):
-                click_safe_ground()
-                print("[-] รถไม่ว่าง ลองใหม่ใน 60 วินาที...")
-                time.sleep(60)
-            elif not find("images/good_enermy.png"): # ปรับ logic เช็ครูปให้เขียนสั้นลง
-                click_safe_ground()
-                print("[-] ศัตรูพลังเยอะกว่า (หรือหาปุ่มไม่เจอ) ลองใหม่ใน 30 วินาที...")
-                time.sleep(30)
+            if success:
+                success_count += 1  # type: ignore
+                print(f">>> ส่งทัพสำเร็จไปแล้ว {success_count} ครั้ง <<<")
+                print(f">>> เติมพลังงานไปแล้ว {energy_refill_count} ครั้ง <<<")
+                print("พักรอทัพกลับมา 3 นาที (180 วินาที)...")
+                time.sleep(180) 
+                
             else:
-                click_safe_ground()
-                print("[-] ปัญหาอื่นๆ เคลียร์หน้าจอแล้วลองใหม่ใน 3 วินาที...")
-                time.sleep(3)
+                # วิเคราะห์สาเหตุที่ล้มเหลวและแก้ไขสถานการณ์
+                if find_and_click('images/back.png'): 
+                    print("[+] ออกจากหน้าต่าง ลองใหม่ใน 2 วินาที...")
+                    time.sleep(2)
+                elif find_and_click("images/world.png"):
+                    print("[+] อยู่ในบ้าน (กดออกแผนที่โลก) ลองใหม่ใน 3 วินาที...")
+                    time.sleep(3)
+                elif find_and_click("images/add-energy.png"):
+                    find_and_click("images/energy20.png")
+                    energy_refill_count += 1  # type: ignore
+                    time.sleep(3)
+                elif find("images/trucknotavailable.png"):
+                    click_safe_ground()
+                    print("[-] รถไม่ว่าง ลองใหม่ใน 60 วินาที...")
+                    time.sleep(60)
+                elif not find("images/good_enermy.png"): # ปรับ logic เช็ครูปให้เขียนสั้นลง
+                    click_safe_ground()
+                    print("[-] ศัตรูพลังเยอะกว่า (หรือหาปุ่มไม่เจอ) ลองใหม่ใน 30 วินาที...")
+                    time.sleep(30)
+                else:
+                    click_safe_ground()
+                    print("[-] ปัญหาอื่นๆ เคลียร์หน้าจอแล้วลองใหม่ใน 3 วินาที...")
+                    time.sleep(3)
+
+    main()
