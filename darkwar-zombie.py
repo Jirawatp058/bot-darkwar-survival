@@ -154,15 +154,17 @@ if __name__ == "__main__":
         
         while is_attack:
             if find("images/frank.png"):
+                print("[+] พบ Frank ปิดโปรแกรมก่อนนะจ๊ะ เดี๋ยวบิน!!! ")
                 is_attack = False
+                break
             success = attack_zombie_routine()
             
             if success:
                 success_count += 1  # type: ignore
                 print(f">>> ส่งทัพสำเร็จไปแล้ว {success_count} ครั้ง <<<")
                 print(f">>> เติมพลังงานไปแล้ว {energy_refill_count} ครั้ง <<<")
-                print("พักรอทัพกลับมา 3 นาที (180 วินาที)...")
-                time.sleep(180) 
+                print("พักรอทัพกลับมา 3 นาที (150 วินาที)...")
+                time.sleep(150) 
                 
             else:
                 # วิเคราะห์สาเหตุที่ล้มเหลวและแก้ไขสถานการณ์
