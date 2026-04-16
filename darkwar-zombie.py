@@ -133,7 +133,7 @@ def attack_zombie_routine():
                     print("[+] กดรวมพล")
                     
                     # 5. เช็คว่าพลังศัตรูตีไหวไหม
-                    if find('images/good_enermy.png') or find('images/warning_enermy.png'):
+                    if find('images/good_enermy.png') or find('images/same_enermy.png') or find('images/warning_enermy.png'):
                         print("[+] ศัตรูพลังน้อยกว่า")
                         
                         # 6. กดปุ่มเตรียมส่งทัพ
@@ -186,7 +186,7 @@ if __name__ == "__main__":
                 print(f">>> ส่งทัพสำเร็จไปแล้ว {success_count} ครั้ง <<<")
                 print(f">>> เติมพลังงานไปแล้ว {energy_refill_count} ครั้ง <<<")
                 print("พักรอทัพกลับมา 3 นาที (130 วินาที)...")
-                time.sleep(130) 
+                time.sleep(140) 
                 
             else:
                 # วิเคราะห์สาเหตุที่ล้มเหลวและแก้ไขสถานการณ์
