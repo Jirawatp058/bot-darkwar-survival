@@ -33,17 +33,28 @@ def setup_game_window(window_title):
 # 2. ฟังก์ชันช่วยเหลือ (หาพื้นที่, หาปุ่ม, คลิก)
 # ==========================================
 def click_safe_ground():
-    print("[?] กำลังสแกนหาพื้นที่สีน้ำตาลว่างๆ (หลบหลีกสิ่งปลูกสร้าง)...")
+    print("[?] กำลังสแกนหาพื้นที่ว่างๆ (หลบหลีกสิ่งปลูกสร้าง)...")
     try:
         screen = pyautogui.screenshot()
         screen_np = np.array(screen)
         frame_bgr = cv2.cvtColor(screen_np, cv2.COLOR_RGB2BGR)
         hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
 
-        # ช่วงสีของพื้นทราย/สีน้ำตาล (Hue: 5-30)
-        lower_brown = np.array([5, 40, 80])
-        upper_brown = np.array([30, 220, 255])
-        mask = cv2.inRange(hsv, lower_brown, upper_brown)
+        # ช่วงสีของพื้นดินในเกม (Hue: 18-28, Sat: 70-145, Val: 120-195)
+        # ตาเห็นเป็น "สีเขียว" แต่ใน HSV จริงอยู่โทนเหลือง-น้ำตาลอ่อน
+        lower_ground = np.array([18, 70, 120])
+        upper_ground = np.array([28, 145, 195])
+        mask = cv2.inRange(hsv, lower_ground, upper_ground)
+
+        # ตัด UI ขอบจอออก เพื่อไม่ให้คลิกโดนปุ่ม UI
+        mask[:70, :] = 0    # แถบ UI ด้านบน
+        mask[-80:, :] = 0   # แถบ UI ด้านล่าง
+        mask[:, :100] = 0   # ไอคอน UI ด้านซ้าย
+        mask[:, -50:] = 0   # ไอคอน UI ด้านขวา
+
+        # ใช้ erode กัดขอบ mask ออก เว้นระยะห่างจากสิ่งปลูกสร้าง
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        mask = cv2.erode(mask, kernel, iterations=1)
 
         # ใช้ distanceTransform เพื่อหาจุดลึกที่สุดในพื้นที่ว่าง
         # (คือจุดที่ห่างจากเส้นขอบของสิ่งปลูกสร้าง/เงาดำ/UI หน้าจอ มากที่สุด)
@@ -63,7 +74,7 @@ def click_safe_ground():
             return False
             
     except Exception as e:
-        print(f"[!] เกิดข้อผิดพลาดใน click_safe_ground: {e}")
+        # print(f"[!] เกิดข้อผิดพลาดใน click_safe_ground: {e}")
         return False
 
 def find_and_click(image_path, confidence=0.8, wait_time=2):
@@ -72,7 +83,7 @@ def find_and_click(image_path, confidence=0.8, wait_time=2):
         if location:
             pyautogui.moveTo(location)
             pyautogui.click()
-            print(f"[+] คลิกสำเร็จ: {image_path}")
+            # print(f"[+] คลิกสำเร็จ: {image_path}")
             time.sleep(wait_time) 
             return True
         else:
@@ -98,7 +109,7 @@ def find(image_path, confidence=0.8, wait_time=1.25):
     try:
         location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence)
         if location:
-            print(f"[+] หาเจอ: {image_path}")
+            # print(f"[+] หาเจอ: {image_path}")
             time.sleep(wait_time) 
             return True
         else:
@@ -108,8 +119,7 @@ def find(image_path, confidence=0.8, wait_time=1.25):
 
 def add_energy():
     print("======================== เริ่มลูปเติมพลังงาน ================================")
-    for i in range(20):
-        click('images/spend.png', wait_time=0.2)
+    click('images/energy20.png', wait_time=0.2)
     return True
 
 # ==========================================
@@ -122,7 +132,7 @@ def attack_zombie_routine():
     if find_and_click('images/zoom.png'):
         
         # 2. เลือกแท็บซอมบี้
-        if find_and_click('images/join.png') or find_and_click('images/joininactive.png'):
+        if find_and_click('images/sumo_icon.png'):
             
             # 3. กดยืนยันค้นหา 
             if find_and_click('images/find.png', wait_time=3):
@@ -148,7 +158,7 @@ def attack_zombie_routine():
                                 print(f">>> ส่งทัพสำเร็จ! เวลา: {current_time} <<<")
                                 return True
                     else:
-                        print("[-] ศัตรูพลังเยอะกว่า (หรือหา good_enermy ไม่เจอ)")
+                        # print("[-] ศัตรูพลังเยอะกว่า (หรือหา good_enermy ไม่เจอ)")
                         return False
                         
     print("=== ลูปโจมตีล้มเหลว หรือ ไม่พบเป้าหมาย ===")
@@ -170,6 +180,9 @@ if __name__ == "__main__":
         # บังคับล็อคหน้าต่างก่อนเริ่มบอทเสมอ
         setup_game_window(GAME_NAME)
         
+        max_attack_count = int(input("[?] ต้องการส่งทัพกี่ครั้ง? : "))
+        print(f"[+] ตั้งเป้าส่งทัพ {max_attack_count} ครั้ง")
+        
         is_attack: bool = True
         success_count: int = 0
         energy_refill_count: int = 0
@@ -183,10 +196,16 @@ if __name__ == "__main__":
             
             if success:
                 success_count += 1  # type: ignore
-                print(f">>> ส่งทัพสำเร็จไปแล้ว {success_count} ครั้ง <<<")
+                print(f">>> ส่งทัพสำเร็จไปแล้ว {success_count}/{max_attack_count} ครั้ง <<<")
                 print(f">>> เติมพลังงานไปแล้ว {energy_refill_count} ครั้ง <<<")
-                print("พักรอทัพกลับมา 3 นาที (130 วินาที)...")
-                time.sleep(160) 
+                
+                if success_count >= max_attack_count:
+                    print(f"[✔] ส่งทัพครบ {max_attack_count} ครั้งแล้ว หยุดการทำงาน!")
+                    is_attack = False
+                    break
+                
+                print("พักรอทัพกลับมา 3 นาที (140 วินาที)...")
+                time.sleep(140) 
                 
             else:
                 # วิเคราะห์สาเหตุที่ล้มเหลวและแก้ไขสถานการณ์
